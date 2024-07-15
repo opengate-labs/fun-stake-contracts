@@ -1,0 +1,25 @@
+// 1h = 3600000000000 ns
+// 30min = 1800000000000 ns
+// 10min = 600000000000 ns
+
+near deploy lottery-test-c.testnet build/v2_contract.wasm --initFunction init --initArgs '{"yieldSource": "storage.herewallet.testnet"}'
+
+near call lottery-test-c.testnet start_session '{"duration": "1800000000000", "countOfWinNumbers": 1}' --accountId lolwtf.testnet
+
+near call lottery-test-c.testnet stake '' --deposit 2  --accountId armmgh.testnet --gas 80000000000000
+
+near call storage.herewallet.testnet deposit --deposit 2 --accountId lottery-test-c.testnet
+
+near call lottery-test-c.testnet finalize_session '' --accountId lolwtf.testnet --gas 150000000000000 --depositYocto 1
+
+near call lottery-test-c.testnet claim '' --accountId armmgh.testnet --gas 50000000000000
+
+
+    // TODO: linear/ref-finance
+    // NearPromise.new(this.yieldSource).functionCall(
+    //   'deposit_and_stake',
+    //   NO_ARGS,
+    //   finalAmount,
+    //   THIRTY_TGAS,
+    // )
+    // return now
