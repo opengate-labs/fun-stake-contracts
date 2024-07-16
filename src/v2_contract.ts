@@ -62,6 +62,8 @@ class FunStake {
 
   @call({})
   set_admin({ address }: { address: string }): void {
+    assert(near.predecessorAccountId() === this.admin, 'Only the admin can change the admin')
+
     this.admin = address
   }
 
