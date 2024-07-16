@@ -98,6 +98,50 @@ class FunStake {
     return this.currentSessionId
   }
 
+  @call({})
+  cashout({sessionId = this.currentSessionId}: {sessionId: string}): NearPromise {
+    const sender = near.predecessorAccountId()
+    const session = this.sessions.get(sessionId)
+    const players = UnorderedMap.reconstruct(session.players)
+    const player = players.get(sender)
+
+    assert(player, 'Player not found')
+    assert(near.blockTimestamp().toString() < session.end, 'Session is ended')
+
+    return NearPromise.new(this.yieldSource).functionCall(
+      'withdraw',
+      JSON.stringify({
+        amount: BigInt(player.amount),
+      }),
+      near.attachedDeposit(),
+      THIRTY_TGAS,
+    ).then(
+      NearPromise.new(near.currentAccountId())
+        .functionCall('cashout_callback', JSON.stringify({ address: sender, sessionId }), NO_DEPOSIT, THIRTY_TGAS))
+  }
+
+  @call({ privateFunction: true })
+  cashout_callback({address, sessionId}: {address: string, sessionId: string}): void {
+    assert(near.predecessorAccountId() === near.currentAccountId(), 'Only contract can call this method')
+
+    const sender = near.predecessorAccountId()
+    const session = this.sessions.get(sessionId)
+    const players = UnorderedMap.reconstruct(session.players)
+    const player = players.get(sender)
+
+    assert(player, 'Player not found')
+    assert(near.blockTimestamp().toString() < session.end, 'Session is ended')
+
+    const playerAmount = BigInt(player.amount)
+    const playerTickets = BigInt(player.tickets)
+    const newSessionTotalTickets = BigInt(session.totalTickets) - playerTickets
+    const newSessionAmount = BigInt(session.amount) - playerAmount
+
+    players.remove(sender)
+
+    this.sessions.set(sessionId, { ...session, players, totalTickets: String(newSessionTotalTickets), amount: String(newSessionAmount) })
+  }
+
   @call({ payableFunction: true })
   stake(): NearPromise {
     const currentSessionId = this.currentSessionId
@@ -280,11 +324,11 @@ class FunStake {
     // 1. Unstake funds in this function
     // 2. Identify reward amount and set somewhere
 
-    const accumulatedReward = BigInt(balanceOf) - BigInt(session.amount)
+    const accumulatedReward = BigInt(balanceOf) - BigInt(session.amount) // 100 - 90 = 10
     near.log('accumulatedReward', accumulatedReward)
-    const protocolFee = (accumulatedReward * this.fee) / BigInt(100)
+    const protocolFee = (accumulatedReward * this.fee) / BigInt(100) // 10 * 10 / 100 = 1
     near.log('protocolFee', protocolFee)
-    const pureReward = accumulatedReward - protocolFee
+    const pureReward = accumulatedReward - protocolFee // 10 - 1 = 9
     near.log('pureReward', pureReward)
 
     this.contractReward += protocolFee
