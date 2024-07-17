@@ -100,7 +100,7 @@ class FunStake {
     return this.currentSessionId
   }
 
-  @call({})
+  @call({ payableFunction: true })
   cashout({sessionId = this.currentSessionId}: {sessionId: string}): NearPromise {
     const sender = near.predecessorAccountId()
     const session = this.sessions.get(sessionId)
@@ -113,7 +113,7 @@ class FunStake {
     return NearPromise.new(this.yieldSource).functionCall(
       'withdraw',
       JSON.stringify({
-        amount: BigInt(player.amount),
+        amount: player.amount,
       }),
       near.attachedDeposit(),
       THIRTY_TGAS,
@@ -123,13 +123,19 @@ class FunStake {
   }
 
   @call({ privateFunction: true })
-  cashout_callback({address, sessionId}: {address: string, sessionId: string}): void {
+  cashout_callback({ sessionId, address }: { sessionId: string, address: string }): NearPromise {
     assert(near.predecessorAccountId() === near.currentAccountId(), 'Only contract can call this method')
 
-    const sender = near.predecessorAccountId()
+    const { result, success } = promiseResult(0)
+
+    if (!success) {
+      near.log('cashout failed', result)
+      return
+    }
+
     const session = this.sessions.get(sessionId)
     const players = UnorderedMap.reconstruct(session.players)
-    const player = players.get(sender)
+    const player = players.get(address)
 
     assert(player, 'Player not found')
     assert(near.blockTimestamp().toString() < session.end, 'Session is ended')
@@ -139,13 +145,17 @@ class FunStake {
     const newSessionTotalTickets = BigInt(session.totalTickets) - playerTickets
     const newSessionAmount = BigInt(session.amount) - playerAmount
 
-    players.remove(sender)
+    players.remove(address)
 
-    this.sessions.set(sessionId, { ...session, players, totalTickets: String(newSessionTotalTickets), amount: String(newSessionAmount) })
+    this.sessions.set(sessionId, { ...session, players, totalTickets: newSessionTotalTickets.toString(), amount: newSessionAmount.toString() })
+
+    return NearPromise.new(address).transfer(playerAmount)
   }
 
   @call({ payableFunction: true })
   stake(): NearPromise {
+    const initialStorageUsage = near.storageUsage()
+    near.log("initialStorageUsage: ", initialStorageUsage)
     const currentSessionId = this.currentSessionId
     const session = this.sessions.get(currentSessionId)
     const now = near.blockTimestamp().toString()
@@ -157,25 +167,36 @@ class FunStake {
     const deposit = near.attachedDeposit()
 
     near.log('BEFORE Yield DEPOSIT')
+    near.log('Locked Balance ---> ', near.accountLockedBalance())
+    near.log('Used gas ---> ', near.usedGas())
 
     return NearPromise.new(this.yieldSource)
       .functionCall('deposit', NO_ARGS, deposit, CALL_TGAS)
       .then(
         NearPromise.new(near.currentAccountId()).functionCall(
           'finalize_stake',
-          JSON.stringify({ sessionId: currentSessionId, playerAddress: sender, now }),
-          deposit,
+          JSON.stringify({
+            sessionId: currentSessionId,
+            playerAddress: sender,
+            now,
+            amount: deposit.toString(),
+            initialStorageUsage: initialStorageUsage.toString()
+          }),
+          // deposit,
+          NO_DEPOSIT,
           THIRTY_TGAS,
         ),
       )
   }
 
-  @call({ privateFunction: true, payableFunction: true })
+  @call({ privateFunction: true })
   finalize_stake({
     sessionId,
     playerAddress,
     now,
-  }: { sessionId: string; playerAddress: string; now: string }): void {
+    initialStorageUsage,
+    amount
+  }: { sessionId: string; playerAddress: string; now: string; amount: string; initialStorageUsage: string }): void {
     near.log('---- IN FINALIZE STAKE ----')
 
     assert(
@@ -190,14 +211,14 @@ class FunStake {
     if (!success) {
       near.log('finalize_stake failed', result)
 
-      NearPromise.new(playerAddress).transfer(near.attachedDeposit())
+      NearPromise.new(playerAddress).transfer(BigInt(amount))
       return
     }
 
     // TODO: revert correctly the state OR maybe even set it here when promises went ok
     near.log('finalize_stake success', result)
 
-    const deposit = near.attachedDeposit()
+    const userDeposit = BigInt(amount)
     const session = this.sessions.get(sessionId)
     const players = UnorderedMap.reconstruct(session.players)
     const player = players.get(playerAddress)
@@ -206,10 +227,10 @@ class FunStake {
     // Do we need to caluclate based on day or just seconds
     const remainingTime = BigInt(session.end) - BigInt(now)
     // const remainingDays = session.duration / this.day - pastTime / this.day
-    const newUserTickets = remainingTime * deposit
+    const newUserTickets = remainingTime * userDeposit
     const newTotalUserTickets = BigInt(player ? player.tickets : 0) + newUserTickets
 
-    const finalAmount = BigInt(player ? player.amount : 0) + deposit
+    const finalAmount = BigInt(player ? player.amount : 0) + userDeposit
 
     players.set(playerAddress, {
       amount: String(finalAmount),
@@ -218,7 +239,12 @@ class FunStake {
     })
 
     const sessionTotalTickets = BigInt(session.totalTickets) + newUserTickets
-    const sessionAmount = BigInt(session.amount) + deposit
+    const sessionAmount = BigInt(session.amount) + userDeposit
+
+    const finalStorageUsage = near.storageUsage()
+    near.log("finalStorageUsage: ", finalStorageUsage)
+    const storageToDeduct = finalStorageUsage - BigInt(initialStorageUsage)
+    near.log("storageToDeduct: ", storageToDeduct)
 
     this.sessions.set(sessionId, {
       ...session,
@@ -267,7 +293,7 @@ class FunStake {
     assert(near.blockTimestamp().toString() > session.end, 'Session is not ended yet')
 
     const promise = NearPromise.new(this.yieldSource)
-      // .functionCall('receive_dividends', NO_ARGS, near.attachedDeposit(), CALL_TGAS)
+      .functionCall('receive_dividends', NO_ARGS, near.attachedDeposit(), CALL_TGAS)
       .functionCall(
         'storage_balance_of',
         JSON.stringify({ account_id: near.currentAccountId() }),
@@ -322,15 +348,12 @@ class FunStake {
       near.log('winningNumber: ', winningNumber)
       winingNumbers.push(winningNumber)
     }
-    // TODO:
-    // 1. Unstake funds in this function
-    // 2. Identify reward amount and set somewhere
 
-    const accumulatedReward = BigInt(balanceOf) - BigInt(session.amount) // 100 - 90 = 10
+    const accumulatedReward = BigInt(balanceOf) - BigInt(session.amount)
     near.log('accumulatedReward', accumulatedReward)
-    const protocolFee = (accumulatedReward * this.fee) / BigInt(100) // 10 * 10 / 100 = 1
+    const protocolFee = (accumulatedReward * this.fee) / BigInt(100)
     near.log('protocolFee', protocolFee)
-    const pureReward = accumulatedReward - protocolFee // 10 - 1 = 9
+    const pureReward = accumulatedReward - protocolFee
     near.log('pureReward', pureReward)
 
     this.contractReward += protocolFee
@@ -416,6 +439,43 @@ class FunStake {
     return isWinner
       ? NearPromise.new(sender).transfer(finalReward)
       : NearPromise.new(sender).transfer(BigInt(player.amount))
+  }
+
+  @view({})
+  get_player_chance({ address, sessionId = this.currentSessionId }: { address: string; sessionId: string }): string {
+    const session = this.sessions.get(sessionId)
+    const players = UnorderedMap.reconstruct(session.players)
+    const player = players.get(address)
+
+    if (!players.get(address)) {
+      return '0'
+    }
+
+    const totalTickets = Number(session.totalTickets)
+    const playerTickets = Number(player.tickets)
+
+    const chance = playerTickets / totalTickets * 100
+
+    return chance.toString()
+  }
+
+  @view({})
+  get_session_winners({ sessionId = this.currentSessionId }: { sessionId: string }): string[] {
+    const session = this.sessions.get(sessionId)
+    const players = UnorderedMap.reconstruct(session.players)
+    const winningNumber = BigInt(session.winingNumbers[0])
+    const winners: string[] = []
+
+
+    for (const [address] of players.toArray()) {
+      const ticketsRange = this.get_player_tickets_range({ address, sessionId })
+
+      if ( winningNumber >= ticketsRange[0] && winningNumber <= ticketsRange[1]) {
+        winners.push(address)
+      }
+    }
+
+    return winners
   }
 
   @view({})
