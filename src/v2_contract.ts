@@ -105,11 +105,6 @@ class FunStake {
   }
 
   @view({})
-	get_actiove_sessions(): Session[] {
-    return this.sessions.toArray().filter(([id, session]) => !session.isFinalized).map(([id, session]) => session)
-	}
-
-  @view({})
   get_admin(): string {
     return this.admin
   }
@@ -193,8 +188,6 @@ class FunStake {
 
     assert(deposit > 0, 'Deposit must be greater than 0')
 
-    near.log('Used gas ---> ', near.usedGas())
-
     return NearPromise.new(this.yieldSource)
       .functionCall('deposit', NO_ARGS, deposit, CALL_TGAS)
       .then(
@@ -221,16 +214,12 @@ class FunStake {
     initialStorageUsage,
     amount
   }: { sessionId: string; playerAddress: string; now: string; amount: string; initialStorageUsage: string }): void {
-    near.log('---- IN FINALIZE STAKE ----')
-
     assert(
       near.predecessorAccountId() === near.currentAccountId(),
       'Only contract can call this method',
     )
 
     const { result, success } = promiseResult(0)
-
-    near.log('---- FINALIZE STAKE PROMISE RESULT ----', result, success)
 
     if (!success) {
       near.log('finalize_stake failed', result)
@@ -240,7 +229,6 @@ class FunStake {
     }
 
     near.storageUsage()
-    near.log('finalize_stake success', result)
 
     const userDeposit = BigInt(amount)
     const session = this.sessions.get(sessionId)
@@ -290,7 +278,6 @@ class FunStake {
     const now = near.blockTimestamp().toString()
     const end = BigInt(now) + BigInt(duration)
 
-    // TODO: move common parts outside contract
     const session: Session = {
       id: newSessionId,
       amount: '0',
@@ -350,7 +337,7 @@ class FunStake {
       return
     }
 
-    near.log('finalizeSessionCallback Success results balanceOf : ', balanceOf)
+    near.log('finalizeSessionCallback balanceOf in yieldSource: ', balanceOf)
 
     const winingNumbers = []
     for (let i = 0; i < session.countOfWinNumbers; i++) {
@@ -366,7 +353,7 @@ class FunStake {
         BigInt(session.totalTickets) > BigInt(0) ? BigInt(session.totalTickets) : BigInt(1)
 
       const winningNumber = value % sessionTotalTickets
-      near.log('winningNumber: ', winningNumber)
+
       winingNumbers.push(winningNumber)
     }
 
@@ -394,22 +381,6 @@ class FunStake {
       near.attachedDeposit(),
       THIRTY_TGAS,
     )
-
-    // TODO: linear/refFinance implementation
-    // const args = JSON.stringify({
-    //   actions: [
-    //     {
-    //       pool_id: 3088,
-    //       token_in: 'near.testnet',
-    //       amount_in,
-    //       // amount_in: session.amount,
-    //       token_out: this.yieldSource,
-    //       min_amount_out: 1,
-    //     },
-    //   ],
-    // })
-
-    // return NearPromise.new(this.refFinance).functionCall('swap', args, NO_DEPOSIT, THIRTY_TGAS)
   }
 
   @call({})
@@ -434,15 +405,9 @@ class FunStake {
     let isWinner: boolean
     let finalReward: bigint
     for (const randomNumber of session.winingNumbers) {
-      near.log('--- ticketRange[0] ----', ticketRange[0])
-      near.log('--- randomNumber ----', randomNumber)
-      near.log('--- ticketRange[1] ----', ticketRange[1])
-
       if (BigInt(randomNumber) >= ticketRange[0] && BigInt(randomNumber) < ticketRange[1]) {
         finalReward = BigInt(player.amount) + BigInt(session.reward)
         isWinner = true
-
-        near.log(`Player ${sender} won ${finalReward} NEAR`)
       }
     }
 
