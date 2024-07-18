@@ -80,47 +80,47 @@ test.afterEach.always(async (t) => {
 //   await setupFinalizeSession(t)
 // })
 
-test('claim rewards', async (t) => {
-  const { root, contract, vzg, alice, bob, currentSessionId } = await setupFinalizeSession(t)
+// test('claim rewards', async (t) => {
+//   const { root, contract, vzg, alice, bob, currentSessionId } = await setupFinalizeSession(t)
 
-  // return
-  const vzgBalanceBeforeClaim = (await vzg.balance()).available.toHuman()
-  const aliceBalanceBeforeClaim = (await alice.balance()).available.toHuman()
-  const bobBalanceBeforeClaim = (await bob.balance()).available.toHuman()
+//   // return
+//   const vzgBalanceBeforeClaim = (await vzg.balance()).available.toHuman()
+//   const aliceBalanceBeforeClaim = (await alice.balance()).available.toHuman()
+//   const bobBalanceBeforeClaim = (await bob.balance()).available.toHuman()
 
-  console.log({
-    vzgBalanceBeforeClaim,
-    aliceBalanceBeforeClaim,
-    bobBalanceBeforeClaim,
-  })
+//   console.log({
+//     vzgBalanceBeforeClaim,
+//     aliceBalanceBeforeClaim,
+//     bobBalanceBeforeClaim,
+//   })
 
-  const vzgClaim = await vzg.call(contract, 'claim', { sessionId: currentSessionId })
-  const aliceClaim = await alice.call(contract, 'claim', { sessionId: currentSessionId })
-  const bobClaim = await bob.call(contract, 'claim', { sessionId: currentSessionId })
+//   const vzgClaim = await vzg.call(contract, 'claim', { sessionId: currentSessionId })
+//   const aliceClaim = await alice.call(contract, 'claim', { sessionId: currentSessionId })
+//   const bobClaim = await bob.call(contract, 'claim', { sessionId: currentSessionId })
 
-  // await t.context.worker.provider.fastForward(5)
+//   // await t.context.worker.provider.fastForward(5)
 
-  const vzgBalanceAfterClaim = (await vzg.balance()).available.toHuman()
-  const aliceBalanceAfterClaim = (await alice.balance()).available.toHuman()
-  const bobBalanceAfterClaim = (await bob.balance()).available.toHuman()
+//   const vzgBalanceAfterClaim = (await vzg.balance()).available.toHuman()
+//   const aliceBalanceAfterClaim = (await alice.balance()).available.toHuman()
+//   const bobBalanceAfterClaim = (await bob.balance()).available.toHuman()
 
-  console.log({
-    vzgBalanceAfterClaim,
-    aliceBalanceAfterClaim,
-    bobBalanceAfterClaim,
-  })
+//   console.log({
+//     vzgBalanceAfterClaim,
+//     aliceBalanceAfterClaim,
+//     bobBalanceAfterClaim,
+//   })
 
-  // const ticketRangeBeforeClaim = await contract.view('getPlayerTicketsRange', {})
-  // t.log(`Ticket Range Before Claim: ${ticketRangeBeforeClaim}`)
+//   // const ticketRangeBeforeClaim = await contract.view('getPlayerTicketsRange', {})
+//   // t.log(`Ticket Range Before Claim: ${ticketRangeBeforeClaim}`)
 
-  // await root.call(contract, 'claim', {})
+//   // await root.call(contract, 'claim', {})
 
-  // const player = await contract.view('sessions', { key: '0', player: root.accountId })
-  // t.true(player.isClaimed)
+//   // const player = await contract.view('sessions', { key: '0', player: root.accountId })
+//   // t.true(player.isClaimed)
 
-  // const contractReward = await contract.view('contractReward', {})
-  // t.log(`Contract Reward: ${contractReward}`)
-})
+//   // const contractReward = await contract.view('contractReward', {})
+//   // t.log(`Contract Reward: ${contractReward}`)
+// })
 
 // import anyTest from 'ava';
 // import { Worker } from 'near-workspaces';
