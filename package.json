@@ -4,7 +4,7 @@
   "license": "(MIT AND Apache-2.0)",
   "type": "module",
   "scripts": {
-    "build": "near-sdk-js build src/v2_contract.ts build/v2_contract.wasm",
+    "build": "near-sdk-js build src/v1hnear.funstake.near.ts build/v1hnear.funstake.near.wasm",
     "test": "$npm_execpath run build && ava -- ./build/v2_contract.wasm"
   },
   "dependencies": {

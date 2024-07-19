@@ -184,7 +184,9 @@ class FunStake {
     assert(now < session.end, 'Session is ended')
 
     const sender = near.predecessorAccountId()
-    const deposit = near.attachedDeposit() - this.stakeStorageCost
+    const players = UnorderedMap.reconstruct(session.players)
+    const player = players.get(sender)
+    const deposit = player ? near.attachedDeposit() : near.attachedDeposit() - this.stakeStorageCost
 
     assert(deposit > 0, 'Deposit must be greater than 0')
 
