@@ -3,24 +3,41 @@
 // 10min = 600000000000 ns
 
 near deploy lottery-test-c.testnet build/v2_contract.wasm --initFunction init --initArgs '{"admin": "lolwtf.testnet", "yieldSource": "storage.herewallet.testnet"}'
+near deploy funstake-usdt-test-d.testnet build/v1usdt.funstake.near.wasm --initFunction init --initArgs '{"admin": "armmgh.testnet", "yieldSource": "burrow.services.ref-labs.testnet", "token": "usdtt.ft.ref-labs.testnet"}'
+
 near deploy funstake-test-a.near build/v2_contract.wasm --initFunction init --initArgs '{"admin": "armmgh.tg", "yieldSource": "storage.herewallet.near"}'
 near deploy v1hnear.funstake.near build/v2_contract.wasm --initFunction init --initArgs '{"admin": "armmgh.tg", "yieldSource": "storage.herewallet.near"}'
 
+### Start Session
+#near
 near call lottery-test-c.testnet start_session '{"duration": "1800000000000", "countOfWinNumbers": 1}' --accountId lolwtf.testnet
 near call funstake-test-a.near start_session '{"duration": "600000000000", "countOfWinNumbers": 1}' --accountId armmgh.tg --networkId mainnet
 near call v1hnear.funstake.near start_session '{"duration": "600000000000", "countOfWinNumbers": 1}' --accountId armmgh.tg --networkId mainnet
+#usdt
+near call funstake-usdt-test-d.testnet start_session '{"duration": "600000000000", "countOfWinNumbers": 1}' --accountId armmgh.testnet
 
 near call lottery-test-c.testnet stake '' --deposit 2  --accountId armmgh.testnet --gas 80000000000000
 
 near call storage.herewallet.testnet deposit --deposit 2 --accountId lottery-test-c.testnet
 
+### Finalize Sesison
+#near
 near call lottery-test-c.testnet finalize_session '' --accountId lolwtf.testnet --gas 150000000000000 --depositYocto 1
 near call funstake-test-a.near finalize_session '' --accountId armmgh.tg --gas 150000000000000 --depositYocto 1 --networkId mainnet
 near call v1hnear.funstake.near finalize_session '' --accountId armmgh.tg --gas 150000000000000 --depositYocto 1 --networkId mainnet
+#usdt
+near call funstake-usdt-test-d.testnet finalize_session '' --accountId armmgh.testnet --gas 250000000000000 --depositYocto 1
 
+### Claim
+#near
 near call lottery-test-c.testnet claim '' --accountId armmgh.testnet --gas 50000000000000
+#usdt
+near call funstake-usdt-test-d.testnet claim '' --accountId armmgh.testnet --gas 150000000000000
 
-near call storage.herewallet.near receive_dividends --accountId funstake-test-a.near --networkId mainnet
+### Cashout
+#usdt
+near call funstake-usdt-test-d.testnet cashout '' --accountId armmgh.testnet --gas 250000000000000 --depositYocto 1
+#near call storage.herewallet.near receive_dividends --accountId funstake-test-a.near --networkId mainnet
 
 
     // TODO: linear/ref-finance

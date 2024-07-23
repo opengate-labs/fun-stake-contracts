@@ -56,7 +56,10 @@ class FunStake {
 
   @call({})
   set_stake_storage_cost({ amount }: { amount: bigint }): void {
-    assert(near.predecessorAccountId() === this.admin, 'Only the admin can change the stake storage cost')
+    assert(
+      near.predecessorAccountId() === this.admin,
+      'Only the admin can change the stake storage cost',
+    )
     this.stakeStorageCost = BigInt(amount)
   }
 
@@ -75,7 +78,10 @@ class FunStake {
 
   @call({})
   withdrawContractReward(): void {
-    assert(near.predecessorAccountId() === this.admin, 'Only the admin can withdraw the contract reward')
+    assert(
+      near.predecessorAccountId() === this.admin,
+      'Only the admin can withdraw the contract reward',
+    )
     assert(this.contractReward > BigInt(0), 'Contract reward is empty')
 
     NearPromise.new(this.admin).transfer(this.contractReward)
@@ -129,21 +135,31 @@ class FunStake {
     assert(player, 'Player not found')
     assert(near.blockTimestamp().toString() < session.end, 'Session is ended')
 
-    return NearPromise.new(this.yieldSource).functionCall(
-      'withdraw',
-      JSON.stringify({
-        amount: player.amount,
-      }),
-      near.attachedDeposit(),
-      THIRTY_TGAS,
-    ).then(
-      NearPromise.new(near.currentAccountId())
-        .functionCall('cashout_callback', JSON.stringify({ address: sender, sessionId }), NO_DEPOSIT, THIRTY_TGAS))
+    return NearPromise.new(this.yieldSource)
+      .functionCall(
+        'withdraw',
+        JSON.stringify({
+          amount: player.amount,
+        }),
+        near.attachedDeposit(),
+        THIRTY_TGAS,
+      )
+      .then(
+        NearPromise.new(near.currentAccountId()).functionCall(
+          'cashout_callback',
+          JSON.stringify({ address: sender, sessionId }),
+          NO_DEPOSIT,
+          THIRTY_TGAS,
+        ),
+      )
   }
 
   @call({ privateFunction: true })
-  cashout_callback({ sessionId, address }: { sessionId: string, address: string }): NearPromise {
-    assert(near.predecessorAccountId() === near.currentAccountId(), 'Only contract can call this method')
+  cashout_callback({ sessionId, address }: { sessionId: string; address: string }): NearPromise {
+    assert(
+      near.predecessorAccountId() === near.currentAccountId(),
+      'Only contract can call this method',
+    )
 
     const { result, success } = promiseResult(0)
 
@@ -166,7 +182,12 @@ class FunStake {
 
     players.remove(address)
 
-    this.sessions.set(sessionId, { ...session, players, totalTickets: newSessionTotalTickets.toString(), amount: newSessionAmount.toString() })
+    this.sessions.set(sessionId, {
+      ...session,
+      players,
+      totalTickets: newSessionTotalTickets.toString(),
+      amount: newSessionAmount.toString(),
+    })
 
     return NearPromise.new(address).transfer(playerAmount + this.stakeStorageCost)
   }
@@ -174,7 +195,7 @@ class FunStake {
   @call({ payableFunction: true })
   stake(): NearPromise {
     const initialStorageUsage = near.storageUsage()
-    near.log("initialStorageUsage: ", initialStorageUsage)
+    near.log('initialStorageUsage: ', initialStorageUsage)
 
     const currentSessionId = this.currentSessionId
     const session = this.sessions.get(currentSessionId)
@@ -200,7 +221,7 @@ class FunStake {
             playerAddress: sender,
             now,
             amount: deposit.toString(),
-            initialStorageUsage: initialStorageUsage.toString()
+            initialStorageUsage: initialStorageUsage.toString(),
           }),
           NO_DEPOSIT,
           THIRTY_TGAS,
@@ -214,8 +235,14 @@ class FunStake {
     playerAddress,
     now,
     initialStorageUsage,
-    amount
-  }: { sessionId: string; playerAddress: string; now: string; amount: string; initialStorageUsage: string }): void {
+    amount,
+  }: {
+    sessionId: string
+    playerAddress: string
+    now: string
+    amount: string
+    initialStorageUsage: string
+  }): void {
     assert(
       near.predecessorAccountId() === near.currentAccountId(),
       'Only contract can call this method',
@@ -263,10 +290,10 @@ class FunStake {
     })
 
     const finalStorageUsage = near.storageUsage()
-    near.log("finalStorageUsage: ", finalStorageUsage)
+    near.log('finalStorageUsage: ', finalStorageUsage)
 
     const storageToDeduct = finalStorageUsage - BigInt(initialStorageUsage)
-    near.log("storageToDeduct: ", storageToDeduct)
+    near.log('storageToDeduct: ', storageToDeduct)
   }
 
   @call({})
@@ -421,7 +448,10 @@ class FunStake {
   }
 
   @view({})
-  get_player_chance({ address, sessionId = this.currentSessionId }: { address: string; sessionId: string }): string {
+  get_player_chance({
+    address,
+    sessionId = this.currentSessionId,
+  }: { address: string; sessionId: string }): string {
     const session = this.sessions.get(sessionId)
     const players = UnorderedMap.reconstruct(session.players)
     const player = players.get(address)
@@ -433,7 +463,7 @@ class FunStake {
     const totalTickets = Number(session.totalTickets)
     const playerTickets = Number(player.tickets)
 
-    const chance = playerTickets / totalTickets * 100
+    const chance = (playerTickets / totalTickets) * 100
 
     return chance.toString()
   }
@@ -445,11 +475,10 @@ class FunStake {
     const winningNumber = BigInt(session.winingNumbers[0])
     const winners: string[] = []
 
-
     for (const [address] of players.toArray()) {
       const ticketsRange = this.get_player_tickets_range({ address, sessionId })
 
-      if ( winningNumber >= ticketsRange[0] && winningNumber <= ticketsRange[1]) {
+      if (winningNumber >= ticketsRange[0] && winningNumber <= ticketsRange[1]) {
         winners.push(address)
       }
     }
