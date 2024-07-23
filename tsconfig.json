@@ -3,12 +3,8 @@
     "experimentalDecorators": true,
     "target": "ES5",
     "noEmit": true,
-    "noImplicitAny": false,
+    "noImplicitAny": false
   },
-  "files": [
-    "src/v2_contract.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
+  "files": ["src/v1usdt.funstake.near.ts", "src/v1hnear.funstake.near.ts"],
+  "exclude": ["node_modules"]
 }
