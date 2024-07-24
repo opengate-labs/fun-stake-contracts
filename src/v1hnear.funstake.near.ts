@@ -300,7 +300,10 @@ class FunStake {
   start_session({
     duration,
     countOfWinNumbers,
-  }: { duration: bigint; countOfWinNumbers: number }): void {
+  }: {
+    duration: bigint
+    countOfWinNumbers: number
+  }): void {
     assert(near.predecessorAccountId() === this.admin, 'Only admin can call this method')
 
     const newSessionId = String(this.sessions.length)
@@ -451,7 +454,10 @@ class FunStake {
   get_player_chance({
     address,
     sessionId = this.currentSessionId,
-  }: { address: string; sessionId: string }): string {
+  }: {
+    address: string
+    sessionId: string
+  }): string {
     const session = this.sessions.get(sessionId)
     const players = UnorderedMap.reconstruct(session.players)
     const player = players.get(address)
@@ -490,7 +496,10 @@ class FunStake {
   get_player_tickets_range({
     address,
     sessionId = this.currentSessionId,
-  }: { address: string; sessionId: string }): bigint[] {
+  }: {
+    address: string
+    sessionId: string
+  }): bigint[] {
     const session = this.sessions.get(sessionId)
     const players = UnorderedMap.reconstruct(session.players)
     const ticketRange: bigint[] = [BigInt(0), BigInt(0)]
