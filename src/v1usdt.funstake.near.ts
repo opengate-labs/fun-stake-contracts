@@ -114,6 +114,11 @@ class FunStakeUsdt {
   }
 
   @view({})
+  get_token(): string {
+    return this.token
+  }
+
+  @view({})
   get_session({ sessionId = this.currentSessionId }: { sessionId: string }): Session {
     const session = this.sessions.get(sessionId)
     assert(session, 'Session not found')
@@ -223,7 +228,7 @@ class FunStakeUsdt {
 
     // TODO: consider returning stake for storage in future
     if (playerStorageDeposit) {
-      return NearPromise.new(address).transfer(this.stakeStorageCost)
+      return NearPromise.new(address).transfer(BigInt(this.stakeStorageCost))
     }
   }
 
