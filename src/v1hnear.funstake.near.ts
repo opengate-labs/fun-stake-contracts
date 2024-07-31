@@ -131,9 +131,14 @@ class FunStake {
     const session = this.sessions.get(sessionId)
     const players = UnorderedMap.reconstruct(session.players)
     const player = players.get(sender)
+    const expectedMinimumGas = THIRTY_TGAS + THIRTY_TGAS + THIRTY_TGAS
 
     assert(player, 'Player not found')
     assert(near.blockTimestamp().toString() < session.end, 'Session is ended')
+    assert(
+      near.prepaidGas() >= expectedMinimumGas,
+      `Not enough prepaid gas, minimum ${expectedMinimumGas} required`,
+    )
 
     return NearPromise.new(this.yieldSource)
       .functionCall(
@@ -195,6 +200,7 @@ class FunStake {
   @call({ payableFunction: true })
   stake(): NearPromise {
     const initialStorageUsage = near.storageUsage()
+    const expectedMinimumGas = THIRTY_TGAS + THIRTY_TGAS
     near.log('initialStorageUsage: ', initialStorageUsage)
 
     const currentSessionId = this.currentSessionId
@@ -203,6 +209,10 @@ class FunStake {
 
     assert(session, 'Session not found')
     assert(now < session.end, 'Session is ended')
+    assert(
+      near.prepaidGas() >= expectedMinimumGas,
+      `Not enough prepaid gas, minimum ${expectedMinimumGas} required`,
+    )
 
     const sender = near.predecessorAccountId()
     const players = UnorderedMap.reconstruct(session.players)
@@ -331,10 +341,15 @@ class FunStake {
   @call({ payableFunction: true })
   finalize_session({ sessionId = this.currentSessionId }: { sessionId: string }): NearPromise {
     const session = this.sessions.get(sessionId)
+    const expectedMinimumGas = THIRTY_TGAS + CALL_TGAS + FIFTY_TGAS + THIRTY_TGAS
 
     assert(session, 'Session not found')
     assert(!session.isFinalized, 'Session is finalized')
     assert(near.blockTimestamp().toString() > session.end, 'Session is not ended yet')
+    assert(
+      near.prepaidGas() >= expectedMinimumGas,
+      `Not enough prepaid gas, minimum ${expectedMinimumGas} required`,
+    )
 
     const promise = NearPromise.new(this.yieldSource)
       .functionCall('receive_dividends', NO_ARGS, near.attachedDeposit(), CALL_TGAS)
@@ -418,6 +433,7 @@ class FunStake {
   @call({})
   claim({ sessionId = this.currentSessionId }: { sessionId: string }): NearPromise {
     const session = this.sessions.get(sessionId)
+    const expectedMinimumGas = FIFTY_TGAS + FIFTY_TGAS + FIFTY_TGAS
 
     assert(session, 'Session not found')
     assert(near.blockTimestamp().toString() > session.end, 'Session is not ended yet')
@@ -431,6 +447,10 @@ class FunStake {
     assert(BigInt(player.tickets) > 0, 'Player has no tickets')
     assert(BigInt(player.amount) > 0, 'Player has no deposit')
     assert(!player.isClaimed, 'Player already claimed')
+    assert(
+      near.prepaidGas() >= expectedMinimumGas,
+      `Not enough prepaid gas, minimum ${expectedMinimumGas} required`,
+    )
 
     const ticketRange = this.get_player_tickets_range({ address: sender, sessionId })
 
