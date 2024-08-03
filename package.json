@@ -6,6 +6,7 @@
   "scripts": {
     "build": "near-sdk-js build src/v1hnear.funstake.near.ts build/v1hnear.funstake.near.wasm",
     "build:usdt": "near-sdk-js build src/v1usdt.funstake.near.ts build/v1usdt.funstake.near.wasm",
+    "build:usdc": "near-sdk-js build src/v1usdc.funstake.near.ts build/v1usdc.funstake.near.wasm",
     "test": "$npm_execpath run build && ava -- ./build/v2_contract.wasm"
   },
   "dependencies": {

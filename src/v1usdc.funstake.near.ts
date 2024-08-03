@@ -9,6 +9,7 @@ import {
   near,
   view,
   ONE_YOCTO,
+  LookupSet,
   LookupMap,
 } from 'near-sdk-js'
 
@@ -47,7 +48,7 @@ const NO_DEPOSIT = BigInt(0)
 const NO_ARGS = JSON.stringify({})
 
 @NearBindgen({})
-class FunStakeUsdt {
+class FunStakeUsdc {
   currentSessionId = ''
   sessions = new UnorderedMap<Session>('ss')
   admin = ''
@@ -261,7 +262,6 @@ class FunStakeUsdt {
     sender_id: string
     amount: string
     msg: string
-    rest: any
   }): NearPromise | string {
     try {
       const now = near.blockTimestamp()
@@ -489,16 +489,16 @@ class FunStakeUsdt {
 
     const userData = JSON.parse(result)
     const suppliedTokens = userData.supplied
-    const suppliedUsdt = suppliedTokens?.find((token) => token.token_id === this.token)
-    const suppliedUsdtBalance = suppliedUsdt ? BigInt(suppliedUsdt.balance) : BigInt(0)
+    const suppliedUsdc = suppliedTokens?.find((token) => token.token_id === this.token)
+    const suppliedUsdcBalance = suppliedUsdc ? BigInt(suppliedUsdc.balance) : BigInt(0)
 
     near.log('suppliedTokens: ', suppliedTokens)
-    near.log('suppliedUsdtBalance: ', suppliedUsdtBalance)
+    near.log('suppliedUsdcBalance: ', suppliedUsdcBalance)
 
     near.log(
-      'finalizeSessionCallback suppliedUsdtBalance in yieldSource: ',
-      typeof suppliedUsdtBalance,
-      suppliedUsdtBalance,
+      'finalizeSessionCallback suppliedUsdcBalance in yieldSource: ',
+      typeof suppliedUsdcBalance,
+      suppliedUsdcBalance,
     )
 
     const winingNumbers = []
@@ -522,7 +522,7 @@ class FunStakeUsdt {
     // TODO: make extra decimal dynamic
     // TODO: keep in mind that 12 can be different for other tokens in Burrow
     // 5000000n - 2000000n = 3000000n
-    const accumulatedReward = suppliedUsdtBalance / BigInt(10 ** 12) - BigInt(session.amount)
+    const accumulatedReward = suppliedUsdcBalance / BigInt(10 ** 12) - BigInt(session.amount)
     near.log('accumulatedReward', accumulatedReward)
 
     const protocolFee = (BigInt(accumulatedReward) * BigInt(this.fee)) / BigInt(100)
