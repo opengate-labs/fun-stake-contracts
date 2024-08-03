@@ -5,6 +5,10 @@
     "noEmit": true,
     "noImplicitAny": false
   },
-  "files": ["src/v1usdt.funstake.near.ts", "src/v1hnear.funstake.near.ts"],
+  "files": [
+    "src/v1usdt.funstake.near.ts",
+    "src/v1hnear.funstake.near.ts",
+    "src/v1usdc.funstake.near.ts"
+  ],
   "exclude": ["node_modules"]
 }
